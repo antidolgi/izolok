@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ПРОМТЕХКОМПЛЕКТ — Клиенты</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(255, 100, 0, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(255, 50, 0, 0.3) 0%, transparent 25%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .login-container, .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    .login-container {
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 16px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    input[type="password"] {
+      padding: 12px 16px;
+      font-size: 18px;
+      border: 2px solid #ff6b00;
+      border-radius: 8px;
+      background: #111;
+      color: white;
+      width: 80%;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 12px 32px;
+      font-size: 18px;
+      background: #ff6b00;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      background: #ff8c00;
+      transform: scale(1.05);
+    }
+
+    /* Анимация искр */
+    .spark {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #ffcc00;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    /* Таблица */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #ff6b00;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+    }
+    .tab-btn.active {
+      background: #ff6b00;
+      color: black;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    th {
+      background: #1a2a6c;
+      color: white;
+      padding: 14px;
+      font-weight: 600;
+      text-align: left;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 14px;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    a {
+      color: #4fc3f7;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead { display: none; }
+      tr {
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+      }
+      td::before {
+        content: attr(data-label) ": ";
+        position: absolute;
+        left: 16px;
+        top: 12px;
+        width: 45%;
+        font-weight: bold;
+        color: #ffcc00;
+      }
+    }
+
+    /* Модальное окно после скачивания */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1a2a6c;
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 500px;
+      position: relative;
+      overflow: hidden;
+    }
+    .fire-logo {
+      font-size: 48px;
+      color: #ff6b00;
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Экран входа -->
+  <div class="login-container" id="loginScreen">
+    <h1>Доступ к базе клиентов</h1>
+    <input type="password" id="passwordInput" placeholder="Введите пароль" />
+    <button onclick="checkPassword()">Войти</button>
+  </div>
+
+  <!-- Основной контент -->
+  <div class="main-container" id="mainScreen" style="display:none;">
+    <h1>Целевая таблица потенциальных клиентов для компании "ПРОМТЕХКОМПЛЕКТ"</h1>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="vologda">Вологодская</button>
+      <button class="tab-btn" data-tab="arkhangelsk">Архангельская</button>
+      <button class="tab-btn" data-tab="yaroslavl">Ярославская</button>
+      <button class="tab-btn" data-tab="kurgan">Курганская</button>
+      <button class="tab-btn" data-tab="tyumen">Тюменская</button>
+      <button class="tab-btn" data-tab="chelyabinsk">Челябинская</button>
+      <button class="tab-btn" data-tab="khabarovsk">Хабаровский край</button>
+    </div>
+
+    <!-- Таблицы по регионам -->
+    <div id="vologda" class="tab-content active">
+      <table>
+        <thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead>
+        <tbody>
+          <tr><td data-label="№">1</td><td data-label="Название">ПАО «Северсталь»</td><td data-label="Отрасль">Металлургия</td><td data-label="Общие">+7 (8202) 52-99-99<br>info@severstal.com</td><td data-label="Закупки">zakupki.materialy@severstal.com</td><td data-label="Материалы">ИЗОФЛОКС, ИЗОЛТЕКС, ИЗОПАК, ИЗОЛОК</td></tr>
+          <tr><td data-label="№">2</td><td data-label="Название">ООО «ФосАгро-Череповец»</td><td data-label="Отрасль">Удобрения</td><td data-label="Общие">+7 (8202) 67-00-00<br>info@phosagro.ru</td><td data-label="Закупки">sbyt.cherepovets@phosagro.ru</td><td data-label="Материалы">ИЗОЛОК (PTFE), ИЗОФЛОКС</td></tr>
+          <tr><td data-label="№">3</td><td data-label="Название">АО «Аммофос»</td><td data-label="Отрасль">Удобрения</td><td data-label="Общие">+7 (8202) 67-11-11<br>info@eurochem.ru</td><td data-label="Закупки">procurement@eurochem.ru</td><td data-label="Материалы">ИЗОЛОК (PTFE, графит)</td></tr>
+          <tr><td data-label="№">4</td><td data-label="Название">АО «Череповецкий электрометаллургический завод»</td><td data-label="Отрасль">Ферросплавы</td><td data-label="Общие">+7 (8202) 52-99-99</td><td data-label="Закупки">snab@chelmz.ru</td><td data-label="Материалы">ИЗОФЛОКС, ИЗОПАК, ИЗОЛОК</td></tr>
+          <tr><td data-label="№">5</td><td data-label="Название">ООО «Технониколь-Череповец»</td><td data-label="Отрасль">Стройматериалы</td><td data-label="Общие">+7 (8202) 33-04-04<br>cherepovets@technonikol.com</td><td data-label="Закупки">cherepovets@technonikol.com (доб. 555)</td><td data-label="Материалы">ИЗОЛОК (графит), ИЗОПЛЕТ</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="yaroslavl" class="tab-content">
+      <table>
+        <thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead>
+        <tbody>
+          <tr><td data-label="№">1</td><td data-label="Название">ПАО «Ярославский НПЗ» (СИБУР)</td><td data-label="Отрасль">Нефтепереработка</td><td data-label="Общие">+7 (4852) 30-00-00<br>ynpz@sibur.ru</td><td data-label="Закупки">ynpz.procurement@sibur.ru</td><td data-label="Материалы">ИЗОЛОК (графит, PTFE), ИЗОФЛОКС</td></tr>
+          <tr><td data-label="№">2</td><td data-label="Название">АО «ЯрЦем»</td><td data-label="Отрасль">Цемент</td><td data-label="Общие">+7 (4852) 47-77-77<br>yarcem@yarcem.ru</td><td data-label="Закупки">yarcem@yarcem.ru</td><td data-label="Материалы">ИЗОФЛОКС (базальт), ИЗОЛОК (арамид)</td></tr>
+          <tr><td data-label="№">3</td><td data-label="Название">АО «Ярославский шинный завод»</td><td data-label="Отрасль">Химия / Автопром</td><td data-label="Общие">+7 (4852) 33-33-33<br>ysk@ysk.ru</td><td data-label="Закупки">ysk.zakupki@ysk.ru</td><td data-label="Материалы">ИЗОЛОК (PTFE), ИЗОЛТЕКС</td></tr>
+          <tr><td data-label="№">4</td><td data-label="Название">ОАО «ЯМЗ»</td><td data-label="Отрасль">Машиностроение</td><td data-label="Общие">+7 (4852) 40-00-00<br>ymz@ymz.ru</td><td data-label="Закупки">ymz@ymz.ru (доб. 112)</td><td data-label="Материалы">ИЗОПЛЕТ, ИЗОЛОК (графит)</td></tr>
+          <tr><td data-label="№">5</td><td data-label="Название">ТЭЦ-3 г. Ярославль</td><td data-label="Отрасль">Энергетика</td><td data-label="Общие">+7 (4852) 73-33-33<br>tec3@yar-energo.ru</td><td data-label="Закупки">tec3@yar-energo.ru</td><td data-label="Материалы">ИЗОПЛЕТ, ИЗОЛОК (графит)</td></tr>
+          <tr><td data-label="№">6</td><td data-label="Название">ПАО «Славнефть-ЯНОС»</td><td data-label="Отрасль">Нефтепереработка</td><td data-label="Общие">+7 (4852) 44-44-44<br>yanos@slavneft.ru</td><td data-label="Закупки">zakupki.yanos@slavneft.ru</td><td data-label="Материалы">ИЗОЛОК (графит, PTFE), ИЗОФЛОКС</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Другие регионы (сокращённо для краткости — можно расширить по аналогии) -->
+    <div id="arkhangelsk" class="tab-content">
+      <table><thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>АО «Архангельский ЦБК»</td><td>ЦБП</td><td>+7 (81831) 9-99-99<br>info@arkhangelsk-cbk.ru</td><td>snab@arkhangelsk-cbk.ru</td><td>ИЗОФЛОКС, ИЗОЛОК (PTFE)</td></tr>
+          <tr><td>2</td><td>ПАО «Северо-Западный цемент»</td><td>Цемент</td><td>+7 (81831) 5-55-55<br>info@nw-cement.ru</td><td>zakupki@nw-cement.ru</td><td>ИЗОФЛОКС (базальт), ИЗОЛОК</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="kurgan" class="tab-content"><table><thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead><tbody><tr><td>1</td><td>АО «Курганхиммаш»</td><td>Химмашиностроение</td><td>+7 (3522) 41-11-11<br>khm@khm.ru</td><td>khm@khm.ru (доб. 205)</td><td>ИЗОЛОК (PTFE, графит)</td></tr></tbody></table></div>
+    <div id="tyumen" class="tab-content"><table><thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead><tbody><tr><td>1</td><td>ПАО «Сургутнефтегаз»</td><td>Нефтедобыча</td><td>+7 (3462) 70-00-00<br>info@surgutneftegas.ru</td><td>info@surgutneftegas.ru</td><td>ИЗОЛОК (графит), ИЗОФЛОКС</td></tr></tbody></table></div>
+    <div id="chelyabinsk" class="tab-content"><table><thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead><tbody><tr><td>1</td><td>ПАО «Мечел»</td><td>Металлургия</td><td>+7 (351) 263-90-00<br>info@mechel.com</td><td>procurement@mechel.com</td><td>ИЗОФЛОКС (кремнезём), ИЗОЛОК</td></tr></tbody></table></div>
+    <div id="khabarovsk" class="tab-content"><table><thead><tr><th>№</th><th>Название</th><th>Отрасль</th><th>Общие контакты</th><th>Закупки</th><th>Материалы</th></tr></thead><tbody><tr><td>1</td><td>АО «Хабаровский ЛПК»</td><td>Лесопромышленный</td><td>+7 (4212) 34-56-78<br>hlpk@hlpk.ru</td><td>hlpk@hlpk.ru</td><td>ИЗОФЛОКС, ИЗОЛОК (PTFE)</td></tr></tbody></table></div>
+
+    <button class="btn" onclick="exportToExcel()">Скачать Excel</button>
+  </div>
+
+  <!-- Модальное окно после скачивания -->
+  <div class="modal" id="downloadModal">
+    <div class="modal-content">
+      <div class="fire-logo">🔥</div>
+      <h2>Подготовил:</h2>
+      <p>Симанов Максим Александрович<br>+7 (995) 788-66-68</p>
+      <button onclick="document.getElementById('downloadModal').style.display='none'">Закрыть</button>
+    </div>
+  </div>
+
+  <script>
+    // Пароль
+    function checkPassword() {
+      const pass = document.getElementById("passwordInput").value;
+      if (pass === "Alena35") {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("mainScreen").style.display = "flex";
+        createSparks();
+      } else {
+        alert("Неверный пароль!");
+      }
+    }
+
+    // Искры
+    function createSparks() {
+      setInterval(() => {
+        const spark = document.createElement("div");
+        spark.className = "spark";
+        spark.style.left = Math.random() * 100 + "vw";
+        spark.style.top = Math.random() * 100 + "vh";
+        spark.style.opacity = "1";
+        spark.style.transition = "opacity 2s, transform 2s";
+        spark.style.transform = "translate(" + (Math.random()-0.5)*100 + "px, " + (Math.random()-0.5)*100 + "px)";
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 2000);
+      }, 300);
+    }
+
+    // Переключение вкладок
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Экспорт в Excel
+    function exportToExcel() {
+      const wb = XLSX.utils.book_new();
+      const regions = [
+        { id: 'vologda', name: 'Vologda' },
+        { id: 'arkhangelsk', name: 'Arkhangelsk' },
+        { id: 'yaroslavl', name: 'Yaroslavl' },
+        { id: 'kurgan', name: 'Kurgan' },
+        { id: 'tyumen', name: 'Tyumen' },
+        { id: 'chelyabinsk', name: 'Chelyabinsk' },
+        { id: 'khabarovsk', name: 'Khabarovsk' }
+      ];
+
+      regions.forEach(r => {
+        const table = document.getElementById(r.id).querySelector('table');
+        if (table) {
+          const ws = XLSX.utils.table_to_sheet(table);
+          XLSX.utils.book_append_sheet(wb, ws, r.name);
+        }
+      });
+
+      XLSX.writeFile(wb, "clients_" + document.querySelector('.tab-btn.active').dataset.tab + ".xlsx");
+      
+      // Показ модального окна
+      setTimeout(() => {
+        document.getElementById('downloadModal').style.display = 'flex';
+        createFireSparks();
+      }, 500);
+    }
+
+    // Искры в модальном окне
+    function createFireSparks() {
+      const modal = document.getElementById('downloadModal');
+      let count = 0;
+      const interval = setInterval(() => {
+        const spark = document.createElement("div");
+        spark.className = "spark";
+        spark.style.left = Math.random() * 100 + "%";
+        spark.style.top = Math.random() * 100 + "%";
+        spark.style.background = "#ff6b00";
+        spark.style.width = "6px";
+        spark.style.height = "6px";
+        modal.querySelector('.modal-content').appendChild(spark);
+        setTimeout(() => spark.remove(), 1000);
+        count++;
+        if (count > 10) clearInterval(interval);
+      }, 200);
+    }
+  </script>
+</body>
+</html>
